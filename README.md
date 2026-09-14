@@ -1,66 +1,58 @@
-# Autonome DePIN Node (Desktop Client)
+# Autonome DePIN Node Desktop
 
-The **Autonome DePIN Node** is an ephemeral compute runner that allows anyone to securely host and execute containerized AI and web3 workloads. By running this desktop client, you can contribute compute power to the network and earn ATMA rewards seamlessly into your Operator Vault smart account.
+Autonome DePIN Node Desktop is the desktop companion application for the Autonome ecosystem, providing a native node running experience built with Tauri, React, and Tailwind CSS. It acts as an Ephemeral Compute Runner for decentralized compute tasks.
 
-## Features
-- **Ephemeral Workloads:** Sandboxed Docker-based execution ensures host safety.
-- **Automated Settlement:** Automatically cryptographically signs compute results and settles transactions on the Bohr Testnet.
-- **Live Telemetry:** Monitor your node's CPU, Memory usage, network status, and historical task rewards right from the dashboard.
-- **Zero-Gas Submissions:** Integrated with a Paymaster to sponsor settlement transactions.
+## Installation
 
-## Prerequisites
-- **Docker Desktop**: You must have Docker Desktop installed and running in the background before launching the node, as it powers the sandboxed compute containers.
+We provide pre-compiled binaries for Linux distributions. You can find the built install files in the `src-tauri/target/release/bundle/` directory.
 
----
+### Debian / Ubuntu (.deb)
+To install the `.deb` package on Debian-based systems (Ubuntu, Linux Mint, Pop!_OS, etc.):
+```bash
+sudo apt install ./src-tauri/target/release/bundle/deb/autonome-desktop_0.1.0_amd64.deb
+```
+Alternatively, use `dpkg`:
+```bash
+sudo dpkg -i src-tauri/target/release/bundle/deb/autonome-desktop_0.1.0_amd64.deb
+sudo apt --fix-broken install
+```
 
-## Installation Guide
+### Fedora / RHEL / CentOS (.rpm)
+To install the `.rpm` package on RPM-based systems (Fedora, openSUSE, etc.):
+```bash
+sudo dnf install src-tauri/target/release/bundle/rpm/autonome-desktop-0.1.0-1.x86_64.rpm
+```
+*(On older systems, use `sudo yum localinstall ...` instead)*
 
-We provide pre-compiled binaries for Linux environments. Choose the package that matches your distribution:
-
-### Debian / Ubuntu (`.deb`)
-1. Download the `.deb` package from the `target/release/bundle/deb/` folder.
-2. Install it using `dpkg`:
+### AppImage (Universal Linux)
+AppImages are standalone executables that run on almost any Linux distribution without installation.
+1. Make the AppImage executable:
    ```bash
-   sudo dpkg -i autonome-desktop_0.1.0_amd64.deb
+   chmod +x src-tauri/target/release/bundle/appimage/autonome-desktop_0.1.0_amd64.AppImage
    ```
-3. If there are missing dependencies, run:
+2. Run the application:
    ```bash
-   sudo apt-get install -f
-   ```
-
-### Fedora / RedHat / CentOS (`.rpm`)
-1. Download the `.rpm` package from the `target/release/bundle/rpm/` folder.
-2. Install it using `dnf` or `rpm`:
-   ```bash
-   sudo dnf install autonome-desktop-0.1.0-1.x86_64.rpm
-   ```
-   *or*
-   ```bash
-   sudo rpm -i autonome-desktop-0.1.0-1.x86_64.rpm
+   ./src-tauri/target/release/bundle/appimage/autonome-desktop_0.1.0_amd64.AppImage
    ```
 
-### Universal Linux (`.AppImage`)
-If you are on an unsupported distribution or prefer portable applications, you can use the AppImage.
-1. Download the `.AppImage` file from the `target/release/bundle/appimage/` folder.
-2. Make it executable:
+## Local Development
+
+If you prefer to build and run the node locally from source:
+
+1. **Install Prerequisites**: Ensure you have Node.js, npm, and Rust installed. You may also need system dependencies for Tauri (e.g., `libwebkit2gtk-4.1-dev`).
+2. **Install Dependencies**:
    ```bash
-   chmod +x autonome-desktop_0.1.0_amd64.AppImage
+   npm install
    ```
-3. Run it directly:
+3. **Run in Development Mode**:
    ```bash
-   ./autonome-desktop_0.1.0_amd64.AppImage
+   npm run tauri dev
+   ```
+4. **Build from Source**:
+   ```bash
+   npm run tauri build
    ```
 
----
+## Integration
 
-## Usage
-1. Open the **Autonome Node** application.
-2. Ensure Docker Desktop is running (the app will notify you if it cannot detect the Docker daemon).
-3. Enter your **Operator Vault Address (ERC-4337)**. This is where your rewards (1.5 ATMA / task) will be deposited.
-4. Click **Start Node**.
-5. The dashboard will populate with real-time CPU and RAM telemetry. Keep the app open in the background to continue processing network requests and earning rewards.
-
-## Troubleshooting
-- **Docker not detected:** Ensure Docker Desktop is open and that the Docker socket is accessible.
-- **Node immediately shuts down:** Check the built-in system logs for `address already in use` or network connection issues. 
-- **Missing ATMA Rewards:** Ensure you are using the correct Bohr Testnet ERC-4337 Smart Account address.
+The Autonome desktop application integrates with the local Autonome FastAPI backend. Ensure you have the `autonome-worker` and `autonome-orchestrator` containers running via Docker Compose (`docker compose up -d` in the `/autonome` repository) for full end-to-end functionality.
