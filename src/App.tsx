@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Command } from '@tauri-apps/plugin-shell';
 
 function App() {
-  const [vaultAddress, setVaultAddress] = useState('');
+  const [vaultAddress, setVaultAddress] = useState(localStorage.getItem('autonome_vault_address') || '');
   const [isRunning, setIsRunning] = useState(false);
   const [dockerStatus, setDockerStatus] = useState<'checking' | 'ok' | 'error'>('checking');
   const [logs, setLogs] = useState<string[]>([]);
@@ -89,8 +89,17 @@ function App() {
       setActivePort(null);
       setNodeStatus(null);
       
+      // Attempt to gracefully shut down any orphaned worker from a previous crash/reload
       try {
-        const command = Command.sidecar('binaries/worker-bin', []);
+        setLogs((prev) => [...prev, 'System: Ensuring port 8000 is clear...']);
+        await fetch(`http://127.0.0.1:8000/shutdown`, { method: 'POST' });
+        await new Promise(r => setTimeout(r, 1500)); // wait for OS to free port
+      } catch (e) {
+        // Expected if port is already free
+      }
+      
+      try {
+        const command = Command.sidecar('binaries/worker-bin', [], { env: { OPERATOR_VAULT: vaultAddress } });
         
         command.on('close', (data) => {
           setLogs((prev) => [...prev, `System: Sidecar closed with code ${data.code}`]);
@@ -106,26 +115,33 @@ function App() {
 
         command.stdout.on('data', (line) => {
           setLogs((prev) => [...prev, `Stdout: ${line}`]);
-          // Dynamic Port Discovery
-          const match = line.match(/http:\/\/127\.0\.0\.1:(\d+)/);
-          if (match && match[1]) {
-            setActivePort(parseInt(match[1], 10));
-          }
         });
 
         command.stderr.on('data', (line) => {
           setLogs((prev) => [...prev, `Stderr: ${line}`]);
-          // Uvicorn logs to stderr by default!
-          const match = line.match(/http:\/\/127\.0\.0\.1:(\d+)/);
-          if (match && match[1]) {
-            setActivePort(parseInt(match[1], 10));
-          }
         });
 
         const child = await command.spawn();
         setChildProcess(child);
         setIsRunning(true);
-        setLogs((prev) => [...prev, 'System: Node started securely in background.']);
+        setActivePort(8000); // Statically point to 8000
+        setLogs((prev) => [...prev, 'System: Node started securely in background on port 8000.']);
+
+        // Poll until the server is up, then set the vault address
+        const checkInterval = setInterval(async () => {
+          try {
+            const res = await fetch(`http://127.0.0.1:8000/set_vault`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ vault: vaultAddress })
+            });
+            if (res.ok) {
+              clearInterval(checkInterval);
+              setLogs((prev) => [...prev, 'System: Operator Vault propagated to execution environment.']);
+            }
+          } catch (e) {}
+        }, 1000);
+
       } catch (e: any) {
         setLogs((prev) => [...prev, `Error starting node: ${e.toString()}`]);
       }
@@ -169,7 +185,10 @@ function App() {
             type="text"
             placeholder="0x..."
             value={vaultAddress}
-            onChange={(e) => setVaultAddress(e.target.value)}
+            onChange={(e) => {
+              setVaultAddress(e.target.value);
+              localStorage.setItem('autonome_vault_address', e.target.value);
+            }}
             className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 w-full focus:ring-2 focus:ring-orange-400 outline-none text-slate-800 font-mono text-sm shadow-sm transition-all"
             disabled={isRunning}
           />
