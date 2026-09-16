@@ -99,7 +99,12 @@ function App() {
       }
       
       try {
-        const command = Command.sidecar('binaries/worker-bin', [], { env: { OPERATOR_VAULT: vaultAddress } });
+        const command = Command.sidecar('binaries/worker-bin', [], {
+          env: {
+            OPERATOR_VAULT: vaultAddress,
+            ORCHESTRATOR_URL: import.meta.env.VITE_ORCHESTRATOR_URL || 'http://2.28.235.223:8002',
+          }
+        });
         
         command.on('close', (data) => {
           setLogs((prev) => [...prev, `System: Sidecar closed with code ${data.code}`]);
